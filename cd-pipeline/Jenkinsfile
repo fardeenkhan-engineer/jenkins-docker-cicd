@@ -1,0 +1,53 @@
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Check Docker Image') {
+            steps {
+                sh '''
+                    docker image inspect my-html-app:latest
+                '''
+            }
+        }
+
+        stage('Stop Old Container') {
+            steps {
+                sh '''
+                    docker rm -f my-html-app-container || true
+                '''
+            }
+        }
+
+        stage('Deploy Container') {
+            steps {
+                sh '''
+                    docker run -d \
+                        --name my-html-app-container \
+                        --restart unless-stopped \
+                        -p 8082:80 \
+                        my-html-app:latest
+                '''
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                sh '''
+                    sleep 2
+                    curl --fail http://localhost:8082/
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'CD Pipeline completed successfully!'
+            echo 'Website is running on port 8082'
+        }
+        failure {
+            echo 'CD Pipeline failed. Check the console output.'
+        }
+    }
+}

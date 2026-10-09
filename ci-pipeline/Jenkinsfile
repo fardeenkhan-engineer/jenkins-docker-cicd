@@ -1,0 +1,41 @@
+
+pipeline {
+    agent any
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Getting project source code'
+                checkout scm
+            }
+        }
+
+        stage('Validate Files') {
+            steps {
+                sh '''
+                    test -f index.html
+                    test -f Dockerfile
+                    grep -qi '<html' index.html
+                    echo "Files validated successfully"
+                '''
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                sh '''
+                    docker build -t my-html-app:latest .
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'CI Pipeline completed successfully!'
+        }
+        failure {
+            echo 'CI Pipeline failed. Check the console output.'
+        }
+    }
+}
